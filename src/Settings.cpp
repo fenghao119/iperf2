@@ -201,7 +201,7 @@ void Settings_Initialize( thread_Settings *main ) {
     main->mMode         = kTest_Normal;  // -d,  mMode == kTest_DualTest
     main->mFormat       = 'a';           // -f,  adaptive bits
     // skip help                         // -h,
-    //main->mBufLenSet  = false;         // -l,	
+    //main->mBufLenSet  = false;         // -l, 
     main->mBufLen       = 128 * 1024;      // -l,  8 Kbyte
     //main->mInterval     = 0;           // -i,  ie. no periodic bw reports
     //main->mPrintMSS   = false;         // -m,  don't print MSS
@@ -664,13 +664,13 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
 
         case 'Z':
 #ifdef TCP_CONGESTION
-	    setCongestionControl( mExtSettings );
-	    mExtSettings->mCongestion = new char[strlen(optarg)+1];
-	    strcpy( mExtSettings->mCongestion, optarg);
+        setCongestionControl( mExtSettings );
+        mExtSettings->mCongestion = new char[strlen(optarg)+1];
+        strcpy( mExtSettings->mCongestion, optarg);
 #else
             fprintf( stderr, "The -Z option is not available on this operating system\n");
 #endif
-	    break;
+        break;
 
         default: // ignore unknown
             break;
@@ -780,8 +780,14 @@ void Settings_GenerateClientSettings( thread_Settings *server,
         (*client)->mHost       = NULL;
         (*client)->mLocalhost  = NULL;
         (*client)->mOutputFileName = NULL;
-        (*client)->mMode       = ((flags & RUN_NOW) == 0 ?
+        
+        if (flags & RUN_REVERSED)
+            (*client)->mMode = kTest_Reversed;
+        else {
+            (*client)->mMode = ((flags & RUN_NOW) == 0 ?
                                    kTest_TradeOff : kTest_DualTest);
+            (*client)->mSock = -1;
+        }
         (*client)->mThreadMode = kMode_Client;
         if ( server->mLocalhost != NULL ) {
             (*client)->mLocalhost = new char[strlen( server->mLocalhost ) + 1];
@@ -839,5 +845,7 @@ void Settings_GenerateClientHdr( thread_Settings *client, client_hdr *hdr ) {
     }
     if ( client->mMode == kTest_DualTest ) {
         hdr->flags |= htonl(RUN_NOW);
+    } else if (client->mMode == kTest_Reversed ) {
+        hdr->flags |= htonl(RUN_REVERSED);
     }
 }

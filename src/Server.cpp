@@ -102,7 +102,7 @@ void Server::Run( void ) {
     struct UDP_datagram* mBuf_UDP  = (struct UDP_datagram*) mBuf; 
 
     ReportStruct *reportstruct = NULL;
-
+    if ( mSettings->mSock == INVALID_SOCKET ) goto early_exit;
     reportstruct = new ReportStruct;
     if ( reportstruct != NULL ) {
         reportstruct->packetID = 0;
@@ -162,6 +162,7 @@ void Server::Run( void ) {
         FAIL(1, "Out of memory! Closing server thread\n", mSettings);
     }
 
+early_exit:
     Mutex_Lock( &clients_mutex );     
     Iperf_delete( &(mSettings->peer), &clients ); 
     Mutex_Unlock( &clients_mutex );

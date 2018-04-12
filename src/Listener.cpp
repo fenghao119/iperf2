@@ -242,6 +242,9 @@ void Listener::Run( void ) {
 #else
                     server->runNext = tempSettings;
 #endif
+                } else if ( tempSettings->mMode == kTest_Reversed) {
+                    server->mSock = INVALID_SOCKET;
+                    server->runNext =  tempSettings;
                 } else {
                     server->runNext =  tempSettings;
                 }

@@ -84,7 +84,8 @@ Client::Client( thread_Settings *inSettings ) {
     }
 
     // connect
-    Connect( );
+    if (mSettings->mSock == INVALID_SOCKET)
+        Connect( );
 
     if ( isReport( inSettings ) ) {
         ReportSettings( inSettings );
@@ -136,15 +137,15 @@ void Client::RunTCP( void ) {
 
     lastPacketTime.setnow();
     if ( mMode_Time ) {
-	memset (&it, 0, sizeof (it));
-	it.it_value.tv_sec = (int) (mSettings->mAmount / 100.0);
-	it.it_value.tv_usec = (int) 10000 * (mSettings->mAmount -
-	    it.it_value.tv_sec * 100.0);
-	err = setitimer( ITIMER_REAL, &it, NULL );
-	if ( err != 0 ) {
-	    perror("setitimer");
-	    exit(1);
-	}
+    memset (&it, 0, sizeof (it));
+    it.it_value.tv_sec = (int) (mSettings->mAmount / 100.0);
+    it.it_value.tv_usec = (int) 10000 * (mSettings->mAmount -
+        it.it_value.tv_sec * 100.0);
+    err = setitimer( ITIMER_REAL, &it, NULL );
+    if ( err != 0 ) {
+        perror("setitimer");
+        exit(1);
+    }
     }
     do {
         // Read the next data block from 
@@ -161,13 +162,13 @@ void Client::RunTCP( void ) {
             WARN_errno( currLen < 0, "write2" ); 
             break; 
         }
-	totLen += currLen;
+    totLen += currLen;
 
-	if(mSettings->mInterval > 0) {
-    	    gettimeofday( &(reportstruct->packetTime), NULL );
+    if(mSettings->mInterval > 0) {
+            gettimeofday( &(reportstruct->packetTime), NULL );
             reportstruct->packetLen = currLen;
             ReportPacket( mSettings->reporthdr, reportstruct );
-        }	
+        }   
 
         if ( !mMode_Time ) {
             /* mAmount may be unsigned, so don't let it underflow! */
@@ -213,8 +214,8 @@ void Client::Run( void ) {
 
 #if HAVE_THREAD
     if ( !isUDP( mSettings ) ) {
-	RunTCP();
-	return;
+    RunTCP();
+    return;
     }
 #endif
     
@@ -455,7 +456,7 @@ void Client::write_UDP_FIN( ) {
             // socket ready to read 
             rc = read( mSettings->mSock, mBuf, mSettings->mBufLen ); 
             WARN_errno( rc < 0, "read" );
-    	    if ( rc < 0 ) {
+            if ( rc < 0 ) {
                 break;
             } else if ( rc >= (int) (sizeof(UDP_datagram) + sizeof(server_hdr)) ) {
                 ReportServerUDP( mSettings, (server_hdr*) ((UDP_datagram*)mBuf + 1) );
