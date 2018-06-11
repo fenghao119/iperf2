@@ -98,12 +98,26 @@ void Server::Sig_Int( int inSigno ) {
  * ------------------------------------------------------------------- */ 
 void Server::Run( void ) {
     long currLen; 
+	int rc;
     max_size_t totLen = 0;
     struct UDP_datagram* mBuf_UDP  = (struct UDP_datagram*) mBuf; 
 
     ReportStruct *reportstruct = NULL;
+
+#ifdef WIN32
+	int to = 30 * 1000; 
+#else
+	struct timeval to;
+	to.tv_sec  = 30; 
+	to.tv_usec = 0; 
+#endif
+
     if ( mSettings->mSock == INVALID_SOCKET ) goto early_exit;
-    reportstruct = new ReportStruct;
+	
+	setsockopt( mSettings->mSock, SOL_SOCKET, SO_RCVTIMEO,
+		    (const void*) &to, sizeof(to));
+
+	reportstruct = new ReportStruct;
     if ( reportstruct != NULL ) {
         reportstruct->packetID = 0;
         mSettings->reporthdr = InitReport( mSettings );
@@ -111,33 +125,32 @@ void Server::Run( void ) {
             // perform read 
             currLen = recv( mSettings->mSock, mBuf, mSettings->mBufLen, 0 ); 
         
-            if ( isUDP( mSettings ) ) {
-                // read the datagram ID and sentTime out of the buffer 
-                reportstruct->packetID = ntohl( mBuf_UDP->id ); 
-                reportstruct->sentTime.tv_sec = ntohl( mBuf_UDP->tv_sec  );
-                reportstruct->sentTime.tv_usec = ntohl( mBuf_UDP->tv_usec ); 
-		reportstruct->packetLen = currLen;
-		gettimeofday( &(reportstruct->packetTime), NULL );
-            } else {
-		totLen += currLen;
-	    }
-        
-            // terminate when datagram begins with negative index 
-            // the datagram ID should be correct, just negated 
-            if ( reportstruct->packetID < 0 ) {
-                reportstruct->packetID = -reportstruct->packetID;
-                currLen = -1; 
-            }
-
-	    if ( isUDP (mSettings)) {
-		ReportPacket( mSettings->reporthdr, reportstruct );
+		    if (currlen > 0) {
+				if ( isUDP( mSettings ) ) {
+					// read the datagram ID and sentTime out of the buffer 
+					reportstruct->packetID = ntohl( mBuf_UDP->id ); 
+					reportstruct->sentTime.tv_sec = ntohl( mBuf_UDP->tv_sec  );
+					reportstruct->sentTime.tv_usec = ntohl( mBuf_UDP->tv_usec ); 
+			reportstruct->packetLen = currLen;
+			gettimeofday( &(reportstruct->packetTime), NULL );
+				} else {
+			totLen += currLen;
+			}
+			
+				// terminate when datagram begins with negative index 
+				// the datagram ID should be correct, just negated 
+				if ( reportstruct->packetID < 0 ) {
+					reportstruct->packetID = -reportstruct->packetID;
+					currLen = -1; 
+				}
+			}
+			if ( isUDP (mSettings)) {
+			ReportPacket( mSettings->reporthdr, reportstruct );
             } else if ( !isUDP (mSettings) && mSettings->mInterval > 0) {
                 reportstruct->packetLen = currLen;
                 gettimeofday( &(reportstruct->packetTime), NULL );
                 ReportPacket( mSettings->reporthdr, reportstruct );
             }
-
-
 
         } while ( currLen > 0 ); 
         
