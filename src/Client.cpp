@@ -461,7 +461,7 @@ void Client::write_UDP_FIN( ) {
                 break;
             } else if ( rc >= (int) (sizeof(UDP_datagram) + sizeof(server_hdr)) ) {
                 // treat negative id as report only
-                if (ntohl( mBuf_UDP->id) < 0) continue;
+                if (ntohl( mBuf_UDP->id) >= 0) continue;
                 ReportServerUDP( mSettings, (server_hdr*) ((UDP_datagram*)mBuf + 1) );
             }
 
