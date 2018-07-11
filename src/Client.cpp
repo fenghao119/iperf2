@@ -432,6 +432,7 @@ void Client::write_UDP_FIN( ) {
     int rc; 
     fd_set readSet; 
     struct timeval timeout; 
+    struct UDP_datagram* mBuf_UDP = (struct UDP_datagram*) mBuf; 
 
     int count = 0; 
     while ( count < 10 ) {
@@ -459,6 +460,8 @@ void Client::write_UDP_FIN( ) {
             if ( rc < 0 ) {
                 break;
             } else if ( rc >= (int) (sizeof(UDP_datagram) + sizeof(server_hdr)) ) {
+                // treat negative id as report only
+                if (ntohl( mBuf_UDP->id) < 0) continue;
                 ReportServerUDP( mSettings, (server_hdr*) ((UDP_datagram*)mBuf + 1) );
             }
 
